@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { QueryProductDto } from './dto/query-product.dto';
 
 @Injectable()
 export class ProductsService {
@@ -16,12 +17,35 @@ export class ProductsService {
     return created.save();
   }
 
-  async findAll(): Promise<Product[]> {
-    return this.productModel.find().exec();
+  async findAll(query: QueryProductDto) {
+    const { page = 1, limit = 10, category, search, sortBy = 'createdAt', order = 'desc' } = query;
+
+    const filter: any = {};
+    if (category) filter.category = category;
+    if (search) filter.name = { $regex: search, $options: 'i' };
+
+    const skip = (page - 1) * limit;
+    const sortOrder = order === 'asc' ? 1 : -1;
+
+    const [data, total] = await Promise.all([
+      this.productModel
+        .find(filter)
+        .populate('category')
+        .sort({ [sortBy]: sortOrder })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.productModel.countDocuments(filter),
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
   }
 
   async findOne(id: string): Promise<Product> {
-    const product = await this.productModel.findById(id).exec();
+    const product = await this.productModel.findById(id).populate('category').exec();
     if (!product) {
       throw new NotFoundException(`Product with ID ${id} not found`);
     }

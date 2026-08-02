@@ -22,7 +22,7 @@ export class Product {
   @Prop({ required: true, default: 0 })
   stock: number;
 
-  @Prop({ unique: true })
+  @Prop({ unique: true, sparse: true })
   sku: string;
 
   @Prop({ default: true })
