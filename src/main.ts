@@ -24,8 +24,13 @@ async function bootstrap() {
   configureDns();
   const app = await NestFactory.create(AppModule);
 
+  const allowedOrigins = [
+    'http://localhost:4200',
+    process.env.FRONTEND_URL,
+  ].filter(Boolean);
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:4200',
+    origin: allowedOrigins,
     credentials: true,
   });
 
